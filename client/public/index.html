@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Web App - Collaborative Project Management</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav id="navbar" class="navbar hidden">
+            <div class="navbar-brand">
+                <h1><i class="fas fa-tasks"></i> Project Web App</h1>
+            </div>
+            <div class="navbar-menu">
+                <a href="#" id="nav-dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="#" id="nav-projects"><i class="fas fa-project-diagram"></i> Projects</a>
+                <a href="#" id="nav-tasks"><i class="fas fa-tasks"></i> My Tasks</a>
+                <div class="navbar-user">
+                    <span id="user-name">User</span>
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login Form -->
+        <div id="login-form" class="auth-container">
+            <div class="auth-form">
+                <h2><i class="fas fa-sign-in-alt"></i> Login to Project Web App</h2>
+                <form onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="login-username">Username or Email</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="auth-link">
+                    Don't have an account? <a href="#" id="show-register-link">Register here</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="auth-container hidden">
+            <div class="auth-form">
+                <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+                <form onsubmit="register(event)">
+                    <div class="form-group">
+                        <label for="reg-username">Username</label>
+                        <input type="text" id="reg-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-firstName">First Name</label>
+                            <input type="text" id="reg-firstName">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-lastName">Last Name</label>
+                            <input type="text" id="reg-lastName">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                </form>
+                <p class="auth-link">
+                    Already have an account? <a href="#" id="show-login-link">Login here</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="main-content hidden">
+            <!-- Dashboard -->
+            <div id="dashboard" class="content-section">
+                <div class="page-header">
+                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                    <button class="btn btn-primary" id="new-project-btn">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-project-diagram"></i>
+                        <h3 id="total-projects">0</h3>
+                        <p>Active Projects</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-tasks"></i>
+                        <h3 id="total-tasks">0</h3>
+                        <p>My Tasks</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3 id="total-collaborators">0</h3>
+                        <p>Collaborators</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <h3 id="overdue-tasks">0</h3>
+                        <p>Overdue Tasks</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-section">
+                        <h3>Recent Projects</h3>
+                        <div id="recent-projects" class="project-list">
+                            <!-- Projects will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-section">
+                        <h3>My Tasks</h3>
+                        <div id="my-tasks" class="task-list">
+                            <!-- Tasks will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects View -->
+            <div id="projects-view" class="content-section hidden">
+                <div class="page-header">
+                    <h1><i class="fas fa-project-diagram"></i> Projects</h1>
+                    <button class="btn btn-primary" id="new-project-btn-2">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                </div>
+                <div id="projects-container" class="projects-grid">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Project Detail View -->
+            <div id="project-detail" class="content-section hidden">
+                <div class="page-header">
+                    <div>
+                        <button class="btn btn-secondary" onclick="showProjects()">
+                            <i class="fas fa-arrow-left"></i> Back to Projects
+                        </button>
+                        <h1 id="project-detail-title">Project Title</h1>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="showCreateTask()">
+                            <i class="fas fa-plus"></i> New Task
+                        </button>
+                        <button class="btn btn-success" onclick="toggleGanttView()">
+                            <i class="fas fa-chart-gantt"></i> Gantt View
+                        </button>
+                    </div>
+                </div>
+
+                <div class="project-info">
+                    <div id="project-details"></div>
+                    <div id="project-members"></div>
+                </div>
+
+                <!-- Task View Tabs -->
+                <div class="tabs">
+                    <button class="tab-button active" onclick="showTaskList()">
+                        <i class="fas fa-list"></i> Task List
+                    </button>
+                    <button class="tab-button" onclick="showGanttChart()">
+                        <i class="fas fa-chart-gantt"></i> Gantt Chart
+                    </button>
+                </div>
+
+                <!-- Task List -->
+                <div id="task-list-view" class="task-container">
+                    <div id="tasks-container" class="tasks-list">
+                        <!-- Tasks will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Gantt Chart -->
+                <div id="gantt-chart-view" class="task-container hidden">
+                    <div id="gantt-chart" class="gantt-container">
+                        <!-- Gantt chart will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks View -->
+            <div id="tasks-view" class="content-section hidden">
+                <div class="page-header">
+                    <h1><i class="fas fa-tasks"></i> My Tasks</h1>
+                </div>
+                <div id="user-tasks-container" class="tasks-list">
+                    <!-- User tasks will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="modal-overlay hidden"></div>
+        
+        <!-- Create Project Modal -->
+        <div id="create-project-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Create New Project</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form onsubmit="createProject(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="project-title">Project Title</label>
+                        <input type="text" id="project-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-description">Description</label>
+                        <textarea id="project-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="project-start-date">Start Date</label>
+                            <input type="date" id="project-start-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="project-end-date">End Date</label>
+                            <input type="date" id="project-end-date">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-budget">Budget</label>
+                        <input type="number" id="project-budget" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Create Task Modal -->
+        <div id="create-task-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Create New Task</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form onsubmit="createTask(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="task-title">Task Title</label>
+                        <input type="text" id="task-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-description">Description</label>
+                        <textarea id="task-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="task-start-date">Start Date</label>
+                            <input type="date" id="task-start-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="task-end-date">End Date</label>
+                            <input type="date" id="task-end-date">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="task-duration">Duration (days)</label>
+                            <input type="number" id="task-duration" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="task-priority">Priority</label>
+                            <select id="task-priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-budget">Budget</label>
+                        <input type="number" id="task-budget" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
