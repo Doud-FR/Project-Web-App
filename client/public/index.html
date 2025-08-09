@@ -15,12 +15,12 @@
                 <h1><i class="fas fa-tasks"></i> Project Web App</h1>
             </div>
             <div class="navbar-menu">
-                <a href="#" onclick="showDashboard()"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-                <a href="#" onclick="showProjects()"><i class="fas fa-project-diagram"></i> Projects</a>
-                <a href="#" onclick="showTasks()"><i class="fas fa-tasks"></i> My Tasks</a>
+                <a href="#" id="nav-dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="#" id="nav-projects"><i class="fas fa-project-diagram"></i> Projects</a>
+                <a href="#" id="nav-tasks"><i class="fas fa-tasks"></i> My Tasks</a>
                 <div class="navbar-user">
                     <span id="user-name">User</span>
-                    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
                 </div>
             </div>
         </nav>
@@ -41,7 +41,7 @@
                     <button type="submit" class="btn btn-primary">Login</button>
                 </form>
                 <p class="auth-link">
-                    Don't have an account? <a href="#" onclick="showRegister()">Register here</a>
+                    Don't have an account? <a href="#" id="show-register-link">Register here</a>
                 </p>
             </div>
         </div>
@@ -76,7 +76,7 @@
                     <button type="submit" class="btn btn-primary">Create Account</button>
                 </form>
                 <p class="auth-link">
-                    Already have an account? <a href="#" onclick="showLogin()">Login here</a>
+                    Already have an account? <a href="#" id="show-login-link">Login here</a>
                 </p>
             </div>
         </div>
@@ -87,7 +87,7 @@
             <div id="dashboard" class="content-section">
                 <div class="page-header">
                     <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
-                    <button class="btn btn-primary" onclick="showCreateProject()">
+                    <button class="btn btn-primary" id="new-project-btn">
                         <i class="fas fa-plus"></i> New Project
                     </button>
                 </div>
@@ -136,7 +136,7 @@
             <div id="projects-view" class="content-section hidden">
                 <div class="page-header">
                     <h1><i class="fas fa-project-diagram"></i> Projects</h1>
-                    <button class="btn btn-primary" onclick="showCreateProject()">
+                    <button class="btn btn-primary" id="new-project-btn-2">
                         <i class="fas fa-plus"></i> New Project
                     </button>
                 </div>
@@ -152,7 +152,7 @@
                         <button class="btn btn-secondary" onclick="showProjects()">
                             <i class="fas fa-arrow-left"></i> Back to Projects
                         </button>
-                        <h1 id="project-title">Project Title</h1>
+                        <h1 id="project-detail-title">Project Title</h1>
                     </div>
                     <div>
                         <button class="btn btn-primary" onclick="showCreateTask()">
@@ -206,13 +206,13 @@
         </div>
 
         <!-- Modals -->
-        <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()"></div>
+        <div id="modal-overlay" class="modal-overlay hidden"></div>
         
         <!-- Create Project Modal -->
         <div id="create-project-modal" class="modal hidden">
             <div class="modal-header">
                 <h3><i class="fas fa-plus"></i> Create New Project</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <button class="modal-close">&times;</button>
             </div>
             <form onsubmit="createProject(event)">
                 <div class="modal-body">
@@ -240,7 +240,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Project</button>
                 </div>
             </form>
@@ -250,7 +250,7 @@
         <div id="create-task-modal" class="modal hidden">
             <div class="modal-header">
                 <h3><i class="fas fa-plus"></i> Create New Task</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <button class="modal-close">&times;</button>
             </div>
             <form onsubmit="createTask(event)">
                 <div class="modal-body">
@@ -293,7 +293,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Task</button>
                 </div>
             </form>

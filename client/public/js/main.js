@@ -16,7 +16,64 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         showLogin();
     }
+    
+    // Bind event listeners after DOM loads
+    bindEventListeners();
 });
+
+function bindEventListeners() {
+    // Navigation click handlers
+    document.getElementById('nav-dashboard')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showDashboard();
+    });
+    
+    document.getElementById('nav-projects')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showProjects();
+    });
+    
+    document.getElementById('nav-tasks')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTasks();
+    });
+    
+    // Logout button
+    document.getElementById('logout-btn')?.addEventListener('click', logout);
+    
+    // Auth links
+    document.getElementById('show-register-link')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showRegister();
+    });
+    
+    document.getElementById('show-login-link')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLogin();
+    });
+    
+    // Project creation buttons
+    document.getElementById('new-project-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCreateProject();
+    });
+    
+    document.getElementById('new-project-btn-2')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCreateProject();
+    });
+    
+    // Modal close handlers
+    document.getElementById('modal-overlay')?.addEventListener('click', closeModal);
+    
+    document.querySelectorAll('.modal-close').forEach(button => {
+        button.addEventListener('click', closeModal);
+    });
+    
+    document.querySelectorAll('.cancel-btn').forEach(button => {
+        button.addEventListener('click', closeModal);
+    });
+}
 
 // Authentication functions
 async function login(event) {
@@ -173,6 +230,9 @@ function showMainContent() {
     document.getElementById('register-form').classList.add('hidden');
     document.getElementById('main-content').classList.remove('hidden');
     document.getElementById('navbar').classList.remove('hidden');
+    
+    // Re-bind event listeners after showing main content
+    bindEventListeners();
 }
 
 function updateUserDisplay() {
@@ -342,11 +402,18 @@ function renderProjects() {
                 <i class="fas fa-project-diagram" style="font-size: 4rem; margin-bottom: 1rem;"></i>
                 <h3>No Projects Yet</h3>
                 <p>Create your first project to get started with collaborative project management!</p>
-                <button class="btn btn-primary" onclick="showCreateProject()" style="margin-top: 1rem;">
+                <button class="btn btn-primary" id="create-first-project-btn" style="margin-top: 1rem;">
                     <i class="fas fa-plus"></i> Create First Project
                 </button>
             </div>
         `;
+        
+        // Bind the create first project button
+        document.getElementById('create-first-project-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showCreateProject();
+        });
+        
         return;
     }
     
@@ -424,7 +491,7 @@ async function loadProjectDetail(projectId) {
 }
 
 function renderProjectDetail(project) {
-    document.getElementById('project-title').textContent = project.title;
+    document.getElementById('project-detail-title').textContent = project.title;
     
     const projectDetails = document.getElementById('project-details');
     projectDetails.innerHTML = `
@@ -642,11 +709,14 @@ function renderUserTasks(userTasks) {
 // Modal functions
 function showCreateProject() {
     showModal('create-project-modal');
-    document.getElementById('project-title').value = '';
-    document.getElementById('project-description').value = '';
-    document.getElementById('project-start-date').value = '';
-    document.getElementById('project-end-date').value = '';
-    document.getElementById('project-budget').value = '';
+    
+    // Clear the form fields in the modal
+    const modal = document.getElementById('create-project-modal');
+    modal.querySelector('#project-title').value = '';
+    modal.querySelector('#project-description').value = '';
+    modal.querySelector('#project-start-date').value = '';
+    modal.querySelector('#project-end-date').value = '';
+    modal.querySelector('#project-budget').value = '';
 }
 
 function showCreateTask() {
@@ -679,11 +749,14 @@ function closeModal() {
 async function createProject(event) {
     event.preventDefault();
     
-    const title = document.getElementById('project-title').value;
-    const description = document.getElementById('project-description').value;
-    const startDate = document.getElementById('project-start-date').value;
-    const endDate = document.getElementById('project-end-date').value;
-    const budget = document.getElementById('project-budget').value;
+    const modal = document.getElementById('create-project-modal');
+    const title = modal.querySelector('#project-title').value;
+    const description = modal.querySelector('#project-description').value;
+    const startDate = modal.querySelector('#project-start-date').value;
+    const endDate = modal.querySelector('#project-end-date').value;
+    const budget = modal.querySelector('#project-budget').value;
+    
+    console.log('Creating project:', { title, description, startDate, endDate, budget });
     
     try {
         showLoading(true);
@@ -700,20 +773,27 @@ async function createProject(event) {
                 description,
                 startDate: startDate || null,
                 endDate: endDate || null,
-                budget: budget || null
+                budget: budget ? parseFloat(budget) : null
             })
         });
         
         const data = await response.json();
+        console.log('Project creation response:', data);
         
         if (response.ok) {
             closeModal();
             showToast('Project created successfully!', 'success');
-            loadProjects();
+            // Refresh the current view
+            if (document.getElementById('projects-view').classList.contains('hidden')) {
+                loadDashboard();
+            } else {
+                loadProjects();
+            }
         } else {
             showToast(data.error || 'Failed to create project', 'error');
         }
     } catch (error) {
+        console.error('Network error:', error);
         showToast('Network error while creating project', 'error');
     } finally {
         showLoading(false);
