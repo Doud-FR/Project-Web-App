@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDatabase } = require('../config/database');
-const { authenticateToken, checkProjectAccess } = require('../middleware/auth');
+const { authenticateToken, checkProjectAccess, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -9,19 +9,37 @@ router.use(authenticateToken);
 // Get all user projects
 router.get('/', (req, res) => {
   const userId = req.user.id;
+  const userRole = req.user.role;
   const db = getDatabase();
   
-  const query = `
-    SELECT DISTINCT p.*, u.username as createdByName,
-           pm.role as memberRole
-    FROM projects p
-    LEFT JOIN users u ON p.createdBy = u.id
-    LEFT JOIN project_members pm ON p.id = pm.projectId AND pm.userId = ?
-    WHERE p.createdBy = ? OR pm.userId = ?
-    ORDER BY p.updatedAt DESC
-  `;
+  let query;
+  let params;
   
-  db.all(query, [userId, userId, userId], (err, projects) => {
+  // Admin and chef_projet see all projects, support sees all (read-only), others see only their projects
+  if (['admin', 'chef_projet', 'support'].includes(userRole)) {
+    query = `
+      SELECT DISTINCT p.*, u.username as createdByName, c.name as clientName
+      FROM projects p
+      LEFT JOIN users u ON p.createdBy = u.id
+      LEFT JOIN clients c ON p.clientId = c.id
+      ORDER BY p.updatedAt DESC
+    `;
+    params = [];
+  } else {
+    query = `
+      SELECT DISTINCT p.*, u.username as createdByName, c.name as clientName,
+             pm.role as memberRole
+      FROM projects p
+      LEFT JOIN users u ON p.createdBy = u.id
+      LEFT JOIN clients c ON p.clientId = c.id
+      LEFT JOIN project_members pm ON p.id = pm.projectId AND pm.userId = ?
+      WHERE p.createdBy = ? OR pm.userId = ?
+      ORDER BY p.updatedAt DESC
+    `;
+    params = [userId, userId, userId];
+  }
+  
+  db.all(query, params, (err, projects) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
@@ -68,9 +86,9 @@ router.get('/:id', checkProjectAccess, (req, res) => {
   });
 });
 
-// Create new project
-router.post('/', (req, res) => {
-  const { title, description, startDate, endDate, budget } = req.body;
+// Create new project (admin, chef_projet only)
+router.post('/', requireRole(['admin', 'chef_projet']), (req, res) => {
+  const { title, description, startDate, endDate, budget, clientId } = req.body;
   const userId = req.user.id;
   
   if (!title) {
@@ -79,11 +97,11 @@ router.post('/', (req, res) => {
   
   const db = getDatabase();
   const query = `
-    INSERT INTO projects (title, description, startDate, endDate, budget, createdBy)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO projects (title, description, startDate, endDate, budget, clientId, createdBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
   
-  db.run(query, [title, description, startDate, endDate, budget, userId], function(err) {
+  db.run(query, [title, description, startDate, endDate, budget, clientId, userId], function(err) {
     if (err) {
       return res.status(500).json({ error: 'Failed to create project' });
     }

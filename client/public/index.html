@@ -40,46 +40,13 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Login</button>
                 </form>
-                <p class="auth-link">
-                    Don't have an account? <a href="#" id="show-register-link">Register here</a>
+                <p class="auth-link auth-info">
+                    Need an account? Contact your administrator.
                 </p>
             </div>
         </div>
 
-        <!-- Register Form -->
-        <div id="register-form" class="auth-container hidden">
-            <div class="auth-form">
-                <h2><i class="fas fa-user-plus"></i> Create Account</h2>
-                <form onsubmit="register(event)">
-                    <div class="form-group">
-                        <label for="reg-username">Username</label>
-                        <input type="text" id="reg-username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-email">Email</label>
-                        <input type="email" id="reg-email" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="reg-firstName">First Name</label>
-                            <input type="text" id="reg-firstName">
-                        </div>
-                        <div class="form-group">
-                            <label for="reg-lastName">Last Name</label>
-                            <input type="text" id="reg-lastName">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-password">Password</label>
-                        <input type="password" id="reg-password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Create Account</button>
-                </form>
-                <p class="auth-link">
-                    Already have an account? <a href="#" id="show-login-link">Login here</a>
-                </p>
-            </div>
-        </div>
+
 
         <!-- Main Content -->
         <div id="main-content" class="main-content hidden">
@@ -203,6 +170,45 @@
                     <!-- User tasks will be loaded here -->
                 </div>
             </div>
+
+            <!-- User Management View (Admin Only) -->
+            <div id="user-management" class="content-section hidden">
+                <div class="page-header">
+                    <h1><i class="fas fa-users-cog"></i> User Management</h1>
+                    <button class="btn btn-primary" id="new-user-btn">
+                        <i class="fas fa-user-plus"></i> New User
+                    </button>
+                </div>
+                <div id="users-container" class="users-grid">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Clients Management View -->
+            <div id="clients-management" class="content-section hidden">
+                <div class="page-header">
+                    <h1><i class="fas fa-building"></i> Clients</h1>
+                    <button class="btn btn-primary" id="new-client-btn">
+                        <i class="fas fa-plus"></i> New Client
+                    </button>
+                </div>
+                <div id="clients-container" class="clients-grid">
+                    <!-- Clients will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Intervention Reports View (Technician Only) -->
+            <div id="intervention-reports" class="content-section hidden">
+                <div class="page-header">
+                    <h1><i class="fas fa-clipboard-list"></i> My Intervention Reports</h1>
+                    <button class="btn btn-primary" id="new-report-btn">
+                        <i class="fas fa-plus"></i> New Report
+                    </button>
+                </div>
+                <div id="reports-container" class="reports-list">
+                    <!-- Reports will be loaded here -->
+                </div>
+            </div>
         </div>
 
         <!-- Modals -->
@@ -295,6 +301,99 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Create User Modal (Admin Only) -->
+        <div id="create-user-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Create New User</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form onsubmit="createUser(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="user-username">Username</label>
+                        <input type="text" id="user-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-email">Email</label>
+                        <input type="email" id="user-email" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="user-firstName">First Name</label>
+                            <input type="text" id="user-firstName">
+                        </div>
+                        <div class="form-group">
+                            <label for="user-lastName">Last Name</label>
+                            <input type="text" id="user-lastName">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="user-password">Password</label>
+                            <input type="password" id="user-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-role">Role</label>
+                            <select id="user-role" required>
+                                <option value="technicien">Technicien</option>
+                                <option value="chef_projet">Chef de Projet</option>
+                                <option value="support">Support</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Create Client Modal -->
+        <div id="create-client-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3><i class="fas fa-building"></i> Create New Client</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form onsubmit="createClient(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="client-name">Client Name</label>
+                        <input type="text" id="client-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="client-address">Address</label>
+                        <textarea id="client-address" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="client-siteManager">Site Manager</label>
+                            <input type="text" id="client-siteManager">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-projectManager">Project Manager</label>
+                            <input type="text" id="client-projectManager">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="client-email">Email</label>
+                            <input type="email" id="client-email">
+                        </div>
+                        <div class="form-group">
+                            <label for="client-phone">Phone</label>
+                            <input type="tel" id="client-phone">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Client</button>
                 </div>
             </form>
         </div>

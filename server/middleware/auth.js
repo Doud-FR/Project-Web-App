@@ -14,9 +14,36 @@ const authenticateToken = (req, res, next) => {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     
-    req.user = user;
-    next();
+    // Get user role from database
+    const db = getDatabase();
+    db.get('SELECT id, username, email, role FROM users WHERE id = ?', [user.id], (err, dbUser) => {
+      if (err || !dbUser) {
+        return res.status(403).json({ error: 'User not found' });
+      }
+      
+      req.user = {
+        id: dbUser.id,
+        username: dbUser.username,
+        email: dbUser.email,
+        role: dbUser.role
+      };
+      next();
+    });
   });
+};
+
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient privileges' });
+    }
+    
+    next();
+  };
 };
 
 const authenticateSocket = (socket, next) => {
@@ -40,9 +67,20 @@ const authenticateSocket = (socket, next) => {
 const checkProjectAccess = async (req, res, next) => {
   const projectId = req.params.projectId || req.params.id;
   const userId = req.user.id;
+  const userRole = req.user.role;
   const db = getDatabase();
   
   try {
+    // Admin and chef_projet have access to all projects
+    if (['admin', 'chef_projet'].includes(userRole)) {
+      req.projectAccess = {
+        isOwner: userRole === 'admin',
+        role: 'manager',
+        permissions: { read: true, write: true, delete: true }
+      };
+      return next();
+    }
+    
     // Check if user is project owner or member
     const query = `
       SELECT p.id, p.createdBy, pm.role, pm.permissions
@@ -56,14 +94,34 @@ const checkProjectAccess = async (req, res, next) => {
         return res.status(500).json({ error: 'Database error' });
       }
       
-      if (!row) {
+      if (!row && userRole !== 'support') {
         return res.status(403).json({ error: 'Access denied to this project' });
+      }
+      
+      // Support role has read-only access to all projects
+      if (userRole === 'support') {
+        req.projectAccess = {
+          isOwner: false,
+          role: 'support',
+          permissions: { read: true, write: false, delete: false }
+        };
+        return next();
+      }
+      
+      // Technicien has limited access
+      if (userRole === 'technicien') {
+        req.projectAccess = {
+          isOwner: false,
+          role: 'technicien',
+          permissions: { read: true, write: false, delete: false }
+        };
+        return next();
       }
       
       req.projectAccess = {
         isOwner: row.createdBy === userId,
         role: row.role || 'owner',
-        permissions: row.permissions ? JSON.parse(row.permissions) : null
+        permissions: row.permissions ? JSON.parse(row.permissions) : { read: true, write: true, delete: true }
       };
       
       next();
@@ -76,5 +134,6 @@ const checkProjectAccess = async (req, res, next) => {
 module.exports = {
   authenticateToken,
   authenticateSocket,
-  checkProjectAccess
+  checkProjectAccess,
+  requireRole
 };

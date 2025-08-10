@@ -9,6 +9,10 @@ const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
+const clientRoutes = require('./routes/clients');
+const interventionReportsRoutes = require('./routes/interventionReports');
+const taskNotesRoutes = require('./routes/taskNotes');
 const { initDatabase } = require('./config/database');
 const { authenticateSocket } = require('./middleware/auth');
 
@@ -34,6 +38,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/intervention-reports', interventionReportsRoutes);
+app.use('/api/task-notes', taskNotesRoutes);
 
 // Socket.IO connection handling
 io.use(authenticateSocket);
