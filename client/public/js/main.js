@@ -238,9 +238,87 @@ function showMainContent() {
 function updateUserDisplay() {
     const userName = document.getElementById('user-name');
     if (currentUser) {
-        userName.textContent = currentUser.firstName ? 
+        const displayName = currentUser.firstName ? 
             `${currentUser.firstName} ${currentUser.lastName}` : 
             currentUser.username;
+        
+        // Add role display based on user role
+        let roleDisplay = '';
+        switch(currentUser.role) {
+            case 'admin':
+                roleDisplay = 'System Administrator';
+                break;
+            case 'chef_projet':
+                roleDisplay = 'Chef de Projet';
+                break;
+            case 'technicien':
+                roleDisplay = 'Technicien';
+                break;
+            case 'support':
+                roleDisplay = 'Support';
+                break;
+            default:
+                roleDisplay = 'User';
+        }
+        
+        userName.textContent = `${displayName} (${roleDisplay})`;
+        
+        // Update navigation based on role
+        updateNavigationForRole(currentUser.role);
+    }
+}
+
+function updateNavigationForRole(role) {
+    const navbar = document.querySelector('.navbar-menu');
+    
+    // Remove existing role-specific menu items
+    const existingAdminLinks = navbar.querySelectorAll('.admin-only, .chef-only, .tech-only');
+    existingAdminLinks.forEach(link => link.remove());
+    
+    // Add role-specific navigation items
+    const dashboardLink = document.getElementById('nav-dashboard');
+    
+    if (['admin', 'chef_projet'].includes(role)) {
+        // Add admin/management links
+        const adminLink = document.createElement('a');
+        adminLink.href = '#';
+        adminLink.className = 'admin-only';
+        adminLink.innerHTML = '<i class="fas fa-users-cog"></i> User Management';
+        adminLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showUserManagement();
+        });
+        
+        const clientsLink = document.createElement('a');
+        clientsLink.href = '#';
+        clientsLink.className = 'admin-only';
+        clientsLink.innerHTML = '<i class="fas fa-building"></i> Clients';
+        clientsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showClientsManagement();
+        });
+        
+        // Insert after dashboard
+        dashboardLink.parentNode.insertBefore(adminLink, dashboardLink.nextSibling);
+        dashboardLink.parentNode.insertBefore(clientsLink, adminLink.nextSibling);
+    }
+    
+    if (role === 'technicien') {
+        // Add technician-specific links
+        const reportsLink = document.createElement('a');
+        reportsLink.href = '#';
+        reportsLink.className = 'tech-only';
+        reportsLink.innerHTML = '<i class="fas fa-clipboard-list"></i> My Reports';
+        reportsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showInterventionReports();
+        });
+        
+        // Insert after tasks
+        const tasksLink = document.getElementById('nav-tasks');
+        if (tasksLink) {
+            tasksLink.parentNode.insertBefore(reportsLink, tasksLink.nextSibling);
+        }
     }
 }
 
@@ -916,3 +994,375 @@ function toggleGanttView() {
         button.innerHTML = '<i class="fas fa-chart-gantt"></i> Gantt View';
     }
 }
+
+// Role-based View Functions
+
+function showUserManagement() {
+    hideAllSections();
+    document.getElementById('user-management').classList.remove('hidden');
+    loadUsers();
+}
+
+function showClientsManagement() {
+    hideAllSections();
+    document.getElementById('clients-management').classList.remove('hidden');
+    loadClients();
+}
+
+function showInterventionReports() {
+    hideAllSections();
+    document.getElementById('intervention-reports').classList.remove('hidden');
+    loadInterventionReports();
+}
+
+// User Management Functions
+async function loadUsers() {
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/admin/users`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const users = await response.json();
+            renderUsers(users);
+        } else {
+            showToast('Failed to load users', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while loading users', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderUsers(users) {
+    const container = document.getElementById('users-container');
+    container.innerHTML = '';
+    
+    if (users.length === 0) {
+        container.innerHTML = '<p class="no-data">No users found</p>';
+        return;
+    }
+    
+    users.forEach(user => {
+        const userCard = document.createElement('div');
+        userCard.className = 'user-card';
+        userCard.innerHTML = `
+            <div class="user-header">
+                <h3>${user.firstName} ${user.lastName} (${user.username})</h3>
+                <span class="user-role ${user.role}">${getRoleDisplayName(user.role)}</span>
+            </div>
+            <div class="user-info">
+                <p><i class="fas fa-envelope"></i> ${user.email}</p>
+                <p><i class="fas fa-calendar"></i> Created: ${new Date(user.createdAt).toLocaleDateString()}</p>
+                ${user.createdByUsername ? `<p><i class="fas fa-user"></i> Created by: ${user.createdByUsername}</p>` : ''}
+            </div>
+            <div class="user-actions">
+                <button class="btn btn-sm btn-secondary" onclick="editUser(${user.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                ${user.id !== currentUser.id ? `
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        container.appendChild(userCard);
+    });
+}
+
+function getRoleDisplayName(role) {
+    const roleNames = {
+        'admin': 'Administrator',
+        'chef_projet': 'Chef de Projet',
+        'technicien': 'Technicien',
+        'support': 'Support'
+    };
+    return roleNames[role] || role;
+}
+
+function showCreateUser() {
+    document.getElementById('create-user-modal').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+async function createUser(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('user-username').value;
+    const email = document.getElementById('user-email').value;
+    const firstName = document.getElementById('user-firstName').value;
+    const lastName = document.getElementById('user-lastName').value;
+    const password = document.getElementById('user-password').value;
+    const role = document.getElementById('user-role').value;
+    
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ username, email, firstName, lastName, password, role })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            closeModal();
+            loadUsers();
+            showToast('User created successfully!', 'success');
+        } else {
+            showToast(data.error || 'Failed to create user', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while creating user', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteUser(userId, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            loadUsers();
+            showToast('User deleted successfully!', 'success');
+        } else {
+            showToast(data.error || 'Failed to delete user', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while deleting user', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Client Management Functions
+async function loadClients() {
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/clients`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const clients = await response.json();
+            renderClients(clients);
+        } else {
+            showToast('Failed to load clients', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while loading clients', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderClients(clients) {
+    const container = document.getElementById('clients-container');
+    container.innerHTML = '';
+    
+    if (clients.length === 0) {
+        container.innerHTML = '<p class="no-data">No clients found</p>';
+        return;
+    }
+    
+    clients.forEach(client => {
+        const clientCard = document.createElement('div');
+        clientCard.className = 'client-card';
+        clientCard.innerHTML = `
+            <div class="client-header">
+                <h3>${client.name}</h3>
+            </div>
+            <div class="client-info">
+                ${client.address ? `<p><i class="fas fa-map-marker-alt"></i> ${client.address}</p>` : ''}
+                ${client.email ? `<p><i class="fas fa-envelope"></i> ${client.email}</p>` : ''}
+                ${client.phone ? `<p><i class="fas fa-phone"></i> ${client.phone}</p>` : ''}
+                ${client.siteManager ? `<p><i class="fas fa-user-tie"></i> Site Manager: ${client.siteManager}</p>` : ''}
+                ${client.projectManager ? `<p><i class="fas fa-user-cog"></i> Project Manager: ${client.projectManager}</p>` : ''}
+                <p><i class="fas fa-calendar"></i> Created: ${new Date(client.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div class="client-actions">
+                <button class="btn btn-sm btn-primary" onclick="viewClientProjects(${client.id})">
+                    <i class="fas fa-project-diagram"></i> View Projects
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="editClient(${client.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteClient(${client.id}, '${client.name}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+        container.appendChild(clientCard);
+    });
+}
+
+function showCreateClient() {
+    document.getElementById('create-client-modal').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+async function createClient(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('client-name').value;
+    const address = document.getElementById('client-address').value;
+    const siteManager = document.getElementById('client-siteManager').value;
+    const projectManager = document.getElementById('client-projectManager').value;
+    const email = document.getElementById('client-email').value;
+    const phone = document.getElementById('client-phone').value;
+    
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/clients`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, address, siteManager, projectManager, email, phone })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            closeModal();
+            loadClients();
+            showToast('Client created successfully!', 'success');
+        } else {
+            showToast(data.error || 'Failed to create client', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while creating client', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteClient(clientId, clientName) {
+    if (!confirm(`Are you sure you want to delete client "${clientName}"?`)) {
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/clients/${clientId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            loadClients();
+            showToast('Client deleted successfully!', 'success');
+        } else {
+            showToast(data.error || 'Failed to delete client', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while deleting client', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Intervention Reports Functions
+async function loadInterventionReports() {
+    try {
+        showLoading(true);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE}/intervention-reports/my-reports`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const reports = await response.json();
+            renderInterventionReports(reports);
+        } else {
+            showToast('Failed to load reports', 'error');
+        }
+    } catch (error) {
+        showToast('Network error while loading reports', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderInterventionReports(reports) {
+    const container = document.getElementById('reports-container');
+    container.innerHTML = '';
+    
+    if (reports.length === 0) {
+        container.innerHTML = '<p class="no-data">No intervention reports found</p>';
+        return;
+    }
+    
+    reports.forEach(report => {
+        const reportCard = document.createElement('div');
+        reportCard.className = 'report-card';
+        reportCard.innerHTML = `
+            <div class="report-header">
+                <h3>${report.title}</h3>
+                <span class="report-status ${report.status}">${report.status}</span>
+            </div>
+            <div class="report-info">
+                <p><i class="fas fa-tasks"></i> Task: ${report.taskTitle}</p>
+                <p><i class="fas fa-project-diagram"></i> Project: ${report.projectTitle}</p>
+                <p><i class="fas fa-clock"></i> Time Spent: ${report.timeSpent} hours</p>
+                <p><i class="fas fa-calendar"></i> Created: ${new Date(report.createdAt).toLocaleDateString()}</p>
+                ${report.description ? `<p><i class="fas fa-info-circle"></i> ${report.description}</p>` : ''}
+            </div>
+            <div class="report-actions">
+                <button class="btn btn-sm btn-primary" onclick="viewReport(${report.id})">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="editReport(${report.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteReport(${report.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+        container.appendChild(reportCard);
+    });
+}
+
+// Add event listeners for new buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // Add event listeners for new user and client buttons
+    document.getElementById('new-user-btn')?.addEventListener('click', showCreateUser);
+    document.getElementById('new-client-btn')?.addEventListener('click', showCreateClient);
+});
