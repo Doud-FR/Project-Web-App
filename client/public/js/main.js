@@ -932,7 +932,7 @@ function formatDate(dateString) {
 }
 
 // Toggle functions for UI
-function toggleGanttView() {
+function toggleGanttView(event) {
     const button = event.target;
     if (document.getElementById('gantt-chart-view').classList.contains('hidden')) {
         showGanttChart();
