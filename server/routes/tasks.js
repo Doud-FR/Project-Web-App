@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDatabase } = require('../config/database');
-const { authenticateToken, checkProjectAccess } = require('../middleware/auth');
+const { authenticateToken, checkProjectAccess, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -119,14 +119,20 @@ router.get('/:id', (req, res) => {
   });
 });
 
-// Create new task
+// Create new task (admin, chef_projet only)
 router.post('/project/:projectId', checkProjectAccess, (req, res) => {
   const projectId = req.params.projectId;
+  const userRole = req.user.role;
   const {
     title, description, startDate, endDate, duration,
     priority, assignedTo, parentTaskId, budget
   } = req.body;
   const userId = req.user.id;
+  
+  // Check if user has permission to create tasks
+  if (!['admin', 'chef_projet'].includes(userRole) && !req.projectAccess.isOwner) {
+    return res.status(403).json({ error: 'Only admin, chef de projet, or project owners can create tasks' });
+  }
   
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
@@ -185,11 +191,12 @@ router.put('/:id', (req, res) => {
     progress, priority, status, assignedTo, parentTaskId, budget
   } = req.body;
   const userId = req.user.id;
+  const userRole = req.user.role;
   
   const db = getDatabase();
   
-  // First get the task to check project access
-  const getTaskQuery = 'SELECT projectId FROM tasks WHERE id = ?';
+  // First get the task to check access
+  const getTaskQuery = 'SELECT projectId, assignedTo FROM tasks WHERE id = ?';
   
   db.get(getTaskQuery, [taskId], (err, task) => {
     if (err) {
@@ -203,18 +210,47 @@ router.put('/:id', (req, res) => {
     req.params.projectId = task.projectId;
     
     checkProjectAccess(req, res, () => {
+      // Check permissions based on role
+      let allowedFields = [];
+      let values = [];
+      let updateParts = [];
+      
+      if (['admin', 'chef_projet'].includes(userRole) || req.projectAccess.isOwner) {
+        // Admin, chef_projet and project owners can update all fields
+        allowedFields = [
+          'title', 'description', 'startDate', 'endDate', 'duration',
+          'progress', 'priority', 'status', 'assignedTo', 'parentTaskId', 'budget'
+        ];
+        values = [title, description, startDate, endDate, duration, progress, priority, status, assignedTo, parentTaskId, budget];
+        updateParts = [
+          'title = ?', 'description = ?', 'startDate = ?', 'endDate = ?', 'duration = ?',
+          'progress = ?', 'priority = ?', 'status = ?', 'assignedTo = ?', 'parentTaskId = ?',
+          'budget = ?'
+        ];
+      } else if (userRole === 'technicien' && task.assignedTo === userId) {
+        // Technicians can only update progress and status of their assigned tasks
+        allowedFields = ['progress', 'status'];
+        values = [progress, status];
+        updateParts = ['progress = ?', 'status = ?'];
+      } else {
+        return res.status(403).json({ 
+          error: 'Insufficient privileges to update this task' 
+        });
+      }
+      
+      if (updateParts.length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+      
       const updateQuery = `
         UPDATE tasks
-        SET title = ?, description = ?, startDate = ?, endDate = ?, duration = ?,
-            progress = ?, priority = ?, status = ?, assignedTo = ?, parentTaskId = ?,
-            budget = ?, updatedAt = CURRENT_TIMESTAMP
+        SET ${updateParts.join(', ')}, updatedAt = CURRENT_TIMESTAMP
         WHERE id = ?
       `;
       
-      db.run(updateQuery, [
-        title, description, startDate, endDate, duration,
-        progress, priority, status, assignedTo, parentTaskId, budget, taskId
-      ], function(err) {
+      values.push(taskId);
+      
+      db.run(updateQuery, values, function(err) {
         if (err) {
           return res.status(500).json({ error: 'Failed to update task' });
         }
@@ -229,7 +265,9 @@ router.put('/:id', (req, res) => {
           VALUES (?, ?, 'updated', 'task', ?, ?)
         `;
         
-        const changes = JSON.stringify({ title, progress, status, assignedTo });
+        const changes = JSON.stringify(Object.fromEntries(
+          allowedFields.map((field, idx) => [field, values[idx]])
+        ));
         db.run(activityQuery, [task.projectId, userId, taskId, changes]);
         
         res.json({ message: 'Task updated successfully' });
