@@ -41,17 +41,6 @@ function bindEventListeners() {
     // Logout button
     document.getElementById('logout-btn')?.addEventListener('click', logout);
     
-    // Auth links
-    document.getElementById('show-register-link')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        showRegister();
-    });
-    
-    document.getElementById('show-login-link')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        showLogin();
-    });
-    
     // Project creation buttons
     document.getElementById('new-project-btn')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -101,42 +90,6 @@ async function login(event) {
             showToast('Login successful!', 'success');
         } else {
             showToast(data.error || 'Login failed', 'error');
-        }
-    } catch (error) {
-        showToast('Network error. Please try again.', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function register(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
-    const firstName = document.getElementById('reg-firstName').value;
-    const lastName = document.getElementById('reg-lastName').value;
-    const password = document.getElementById('reg-password').value;
-    
-    try {
-        showLoading(true);
-        const response = await fetch(`${API_BASE}/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, email, firstName, lastName, password })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            localStorage.setItem('authToken', data.token);
-            currentUser = data.user;
-            initializeApp();
-            showToast('Account created successfully!', 'success');
-        } else {
-            showToast(data.error || 'Registration failed', 'error');
         }
     } catch (error) {
         showToast('Network error. Please try again.', 'error');
@@ -213,21 +166,12 @@ function initializeSocket() {
 // UI Navigation functions
 function showLogin() {
     document.getElementById('login-form').classList.remove('hidden');
-    document.getElementById('register-form').classList.add('hidden');
-    document.getElementById('main-content').classList.add('hidden');
-    document.getElementById('navbar').classList.add('hidden');
-}
-
-function showRegister() {
-    document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('register-form').classList.remove('hidden');
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('navbar').classList.add('hidden');
 }
 
 function showMainContent() {
     document.getElementById('login-form').classList.add('hidden');
-    document.getElementById('register-form').classList.add('hidden');
     document.getElementById('main-content').classList.remove('hidden');
     document.getElementById('navbar').classList.remove('hidden');
     

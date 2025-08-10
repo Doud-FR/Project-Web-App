@@ -2,14 +2,21 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDatabase } = require('../config/database');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
-// Register new user
-router.post('/register', async (req, res) => {
-  const { username, email, password, firstName, lastName } = req.body;
+// Register new user - ADMIN ONLY
+router.post('/register', authenticateToken, requireRole(['admin']), async (req, res) => {
+  const { username, email, password, firstName, lastName, role } = req.body;
   
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email and password are required' });
+  }
+  
+  // Validate role
+  const validRoles = ['admin', 'chef_projet', 'technicien', 'support'];
+  if (role && !validRoles.includes(role)) {
+    return res.status(400).json({ error: 'Invalid role specified' });
   }
   
   try {
@@ -17,11 +24,19 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const query = `
-      INSERT INTO users (username, email, password, firstName, lastName)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (username, email, password, firstName, lastName, role, createdBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     
-    db.run(query, [username, email, hashedPassword, firstName || '', lastName || ''], function(err) {
+    db.run(query, [
+      username, 
+      email, 
+      hashedPassword, 
+      firstName || '', 
+      lastName || '', 
+      role || 'technicien',
+      req.user.id
+    ], function(err) {
       if (err) {
         if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
           return res.status(400).json({ error: 'Username or email already exists' });
@@ -29,21 +44,15 @@ router.post('/register', async (req, res) => {
         return res.status(500).json({ error: 'Failed to create user' });
       }
       
-      const token = jwt.sign(
-        { id: this.lastID, username, email },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-      
       res.status(201).json({
         message: 'User created successfully',
-        token,
         user: {
           id: this.lastID,
           username,
           email,
           firstName: firstName || '',
-          lastName: lastName || ''
+          lastName: lastName || '',
+          role: role || 'technicien'
         }
       });
     });
