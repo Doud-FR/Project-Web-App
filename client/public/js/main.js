@@ -598,22 +598,26 @@ function createTaskCard(task, compact = false) {
     return card;
 }
 
-function showTaskList() {
+function showTaskList(event) {
     document.getElementById('task-list-view').classList.remove('hidden');
     document.getElementById('gantt-chart-view').classList.add('hidden');
     
     // Update tab buttons
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 }
 
-function showGanttChart() {
+function showGanttChart(event) {
     document.getElementById('task-list-view').classList.add('hidden');
     document.getElementById('gantt-chart-view').classList.remove('hidden');
     
     // Update tab buttons
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
     
     renderGanttChart();
 }
